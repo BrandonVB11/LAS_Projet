@@ -18,6 +18,6 @@ Creaction du jeu Streams en Langage C
 
 ## Enoncé
 
-    -Le projet à réaliser est une application client-serveur qui utilise des sockets TCP/IP pour
+    - Le projet à réaliser est une application client-serveur qui utilise des sockets TCP/IP pour
     implémenter le dialogue entre le gestionnaire du jeu (le serveur) et les joueurs (les clients) et
     une mémoire commune pour partager les scores des joueurs. 
