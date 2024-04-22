@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 
 #include "message.h"
+#include "ipc_conf.h"
 #include "utils_v1.h"
 
 #define MIN_PLAYERS 2
@@ -64,6 +65,11 @@ int setup_server_socket(int port){
 
 int main(int argc, char const *argv[])
 {
+    int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
+
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
+    char * shm = sshmat(shm_id);
+
     int sockfd, newsockfd, i;
 	StructMessage msg;
 	int ret;
@@ -99,9 +105,17 @@ int main(int argc, char const *argv[])
 
 				if (nbPLayers < MIN_PLAYERS)
 				{
+                    //down la memoire partagee
+                    sem_down(sem_id, 0);
+                    //enregistre le pseudo du joueur dans la memoire partagee
+                    strcpy(shm, msg.messageText);
+                    printf("Pseudo enregistré dans la mémoire partagée : %s\n", shm);
+                    //up la memoire partagee
+                    sem_up(sem_id, 0);
+
 					msg.code = INSCRIPTION_OK;
 					nbPLayers++;
-					if (nbPLayers == MIN_PLAYERS)
+					if (nbPLayers >= MIN_PLAYERS)
 					{
 						alarm(0);
 						end_inscriptions = 1;

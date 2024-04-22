@@ -1,5 +1,5 @@
-#ifndef _MESSAGES_H_
-#define _MESSAGES_H_
+#ifndef _MESSAGE_H_
+#define _MESSAGE_H_
 
 #define SERVER_PORT 9502
 #define SERVER_IP "127.0.0.1"
@@ -10,6 +10,7 @@
 #define INSCRIPTION_KO 12
 #define START_GAME 13
 #define CANCEL_GAME 14
+#define CREATE_SHARE_MEMORY 15
 
 typedef struct
 {
