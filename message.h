@@ -10,7 +10,7 @@
 #define INSCRIPTION_KO 12
 #define START_GAME 13
 #define CANCEL_GAME 14
-#define CREATE_SHARE_MEMORY 15
+
 
 typedef struct
 {

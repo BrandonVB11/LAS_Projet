@@ -65,18 +65,21 @@ int setup_server_socket(int port){
 
 int main(int argc, char const *argv[])
 {
-    int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
-
-    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
-    char * shm = sshmat(shm_id);
-
     int sockfd, newsockfd, i;
 	StructMessage msg;
 	int ret;
 	struct pollfd fds[MIN_PLAYERS];
+
+    int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
+
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
+    char * shm = sshmat(shm_id);
+    printf("MEMOIRE PARTAGE CREEE\n");
+
     
     ssigaction(SIGALRM, endServerHandler);
 
+    printf("LANCEMENT DU SERVEUR\n");
 	sockfd = setup_server_socket(SERVER_PORT);
 	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
 
