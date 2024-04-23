@@ -120,10 +120,7 @@ int main(int argc, char const *argv[])
 					nbPLayers++;
 					if (alarm(TIME_INSCRIPTION) == -1)
 					{
-						if(nbPLayers >= MIN_PLAYERS)
-						{
 							alarm(0);
-						}
 					}
 				}
 				else
