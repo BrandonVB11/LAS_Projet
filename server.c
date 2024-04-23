@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "message.h"
+#include "messages.h"
 #include "ipc_conf.h"
 #include "utils_v1.h"
 

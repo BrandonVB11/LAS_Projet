@@ -1,5 +1,5 @@
-#ifndef _MESSAGE_H_
-#define _MESSAGE_H_
+#ifndef _MESSAGES_H_
+#define _MESSAGES_H_
 
 #define SERVER_PORT 9502
 #define SERVER_IP "127.0.0.1"
