@@ -13,8 +13,9 @@
 #include "utils_v1.h"
 
 #define MIN_PLAYERS 2
+#define MAX_PLAYERS 10
 #define BACKLOG 5
-#define TIME_INSCRIPTION 30
+#define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
 
 typedef struct Player
 {
@@ -24,7 +25,7 @@ typedef struct Player
     int score;
 } Player;
 
-Player tabPlayers[MIN_PLAYERS];
+Player tabPlayers[MAX_PLAYERS];
 volatile sig_atomic_t end_inscriptions = 0;
 
 void endServerHandler(int sig)
@@ -118,10 +119,12 @@ int main(int argc, char const *argv[])
 
 					msg.code = INSCRIPTION_OK;
 					nbPLayers++;
-					if (nbPLayers >= MIN_PLAYERS)
+					if (alarm(TIME_INSCRIPTION) == -1)
 					{
-						alarm(0);
-						end_inscriptions = 1;
+						if(nbPLayers >= MIN_PLAYERS)
+						{
+							alarm(0);
+						}
 					}
 				}
 				else
@@ -134,24 +137,19 @@ int main(int argc, char const *argv[])
 		}
 	}
 
+if(nbPLayers < MIN_PLAYERS){
+	printf("PAS ASSEZ DE JOUEURS ... JEU ANNULEE\n");
+	msg.code = CANCEL_GAME;
+	for (i = 0; i < nbPLayers; i++)
+		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+	disconnect_players(tabPlayers, nbPLayers);
+	exit(0);
+}
+else{
 	printf("FIN DES INSCRIPTIONS\n");
-	if (nbPLayers < MIN_PLAYERS)
-	{
-		printf("PARTIE ANNULEE .. PAS ASSEZ DE JOUEURS\n");
-		msg.code = CANCEL_GAME;
-		for (i = 0; i < nbPLayers; i++)
-		{
-			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
-		}
-		disconnect_players(tabPlayers, nbPLayers);
-		sclose(sockfd);
-		exit(0);
-	}
-	else
-	{
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
 		for (i = 0; i < nbPLayers; i++)
 			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
-	}
+}
 }
