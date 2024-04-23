@@ -68,8 +68,7 @@ int main(int argc, char const *argv[])
 {
     int sockfd, newsockfd, i;
 	StructMessage msg;
-	int ret;
-	struct pollfd fds[MIN_PLAYERS];
+	
 
     int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
 
@@ -97,7 +96,7 @@ int main(int argc, char const *argv[])
 		if (newsockfd > 0)						
 		{
 
-			ret = sread(newsockfd, &msg, sizeof(msg));
+			sread(newsockfd, &msg, sizeof(msg));
 
 			if (msg.code == INSCRIPTION_REQUEST)
 			{
@@ -131,7 +130,7 @@ int main(int argc, char const *argv[])
 				{
 					msg.code = INSCRIPTION_KO;
 				}
-				ret = swrite(newsockfd, &msg, sizeof(msg));
+				swrite(newsockfd, &msg, sizeof(msg));
 				printf("Nb Inscriptions : %i\n", nbPLayers);
 			}
 		}
