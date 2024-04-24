@@ -47,6 +47,60 @@ int initSocketClient(char *serverIP, int serverPort) {
     return sockfd;
 }
 
+int count_score(const PlayerBoard* player) {
+    int points = 0;
+    int current_sequence_length = 0;
+
+    // Parcours de la grille
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        if (player->board[i] != -1) { // Si la case n'est pas vide
+            if (current_sequence_length == 0 || (player->board[i] == player->board[i - 1] + 1)) {
+                current_sequence_length++; // Si la tuile est consécutive, on augmente la suite
+            } else {
+                // Fin d'une suite, calculer les points
+                if (current_sequence_length >= 3) {
+                    if (current_sequence_length == 3) {
+                        points += 2; // 3 tuiles rapportent 2 points
+                    } else if (current_sequence_length == 4) {
+                        points += 5; // 4 tuiles rapportent 5 points
+                    } else if (current_sequence_length > 4) {
+                        points += 5 + (current_sequence_length - 3); // 5 tuiles et plus
+                    }
+                }
+
+                // Réinitialiser la longueur de la suite
+                current_sequence_length = 1; // Recommencer une nouvelle suite
+            }
+        } else {
+            // Si on trouve une case vide, on calcule la suite précédente
+            if (current_sequence_length >= 3) {
+                if (current_sequence_length == 3) {
+                    points += 2; 
+                } else if (current_sequence_length == 4) {
+                    points += 5; 
+                } else if (current_sequence_length > 4) {
+                    points += 5 + (current_sequence_length - 3);
+                }
+            }
+
+            current_sequence_length = 0; // Réinitialiser pour suite suivante
+        }
+    }
+
+    // Traiter la dernière suite si nécessaire
+    if (current_sequence_length >= 3) {
+        if (current_sequence_length == 3) {
+            points += 2;
+        } else if (current_sequence_length == 4) {
+            points += 5;
+        } else if (current_sequence_length > 4) {
+            points += 5 + (current_sequence_length - 3);
+        }
+    }
+
+    return points; // Retourner le score total
+}
+
 int main(int argc, char **argv) {
     char pseudo[MAX_PSEUDO];
     int sockfd;
@@ -136,7 +190,13 @@ int main(int argc, char **argv) {
             }
             swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
         }
-    } else {
+    }
+    if (msg.code == END_OF_GAME) {
+        printf("Jeu terminé\n");
+        int score = count_score(&player);
+        //TODO : envoyer score au serveur
+        printf("Score final du joueur %s: %d points\n", player.pseudo, score);
+        } else {
         printf("Jeu annulé\n");
         sclose(sockfd);
     }

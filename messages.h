@@ -11,6 +11,7 @@
 #define START_GAME 13
 #define CANCEL_GAME 14
 #define INSCRIPTION_EN_ATTENTE 15
+#define END_OF_GAME 16
 
 
 typedef struct
