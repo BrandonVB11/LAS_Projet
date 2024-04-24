@@ -7,12 +7,14 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <signal.h>
 
 #include "messages.h"
 #include "utils_v1.h"
 
-#define MAX_PSEUDO 32
+#define TILE_PLACEMENT 1
 #define BOARD_SIZE 20
+#define MAX_MESSAGE_TEXT 100
 
 typedef struct {
     int board[BOARD_SIZE];
@@ -22,7 +24,7 @@ typedef struct {
 // Initialisation de la grille avec des valeurs par défaut
 void initialize_board(PlayerBoard *player) {
     for (int i = 0; i < BOARD_SIZE; i++) {
-        player.board[i] = -1;
+        player->board[i] = -1;
     }
 }
 
@@ -30,10 +32,10 @@ void initialize_board(PlayerBoard *player) {
 void display_board(const PlayerBoard *player) {
     printf("Grille du joueur %s:\n", player->pseudo);
     for (int i = 0; i < BOARD_SIZE; i++) {
-        if (player.board[i] == -1) {
+        if (player->board[i] == -1) {  // Arrow notation
             printf("[ ] "); // Case vide
         } else {
-            printf("[%d] ", player.board[i]); // Case occupée
+            printf("[%d] ", player->board[i]); // Case occupée
         }
     }
     printf("\n");
@@ -123,7 +125,15 @@ int main(int argc, char **argv) {
 
             // Envoyer le placement au serveur
             msg.code = TILE_PLACEMENT; // Code pour placement de tuile
-            snprintf(msg.messageText, sizeof(msg.messageText), "Joueur %s a placé la tuile %d en position %d", player.pseudo, tile, pos);
+            // Safely copy into msg.messageText
+            int written = snprintf(msg.messageText, MAX_MESSAGE_TEXT, 
+                                   "Joueur %s a placé la tuile %d en position %d", 
+                                   player.pseudo, tile, pos);
+
+            // Check for truncation
+            if (written >= MAX_MESSAGE_TEXT || written < 0) {
+                printf("Warning: Message text may be truncated or an error occurred\n");
+            }
             swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
         }
     } else {
