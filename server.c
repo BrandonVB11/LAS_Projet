@@ -40,6 +40,18 @@ void disconnect_players(Player *tabPlayers, int nbPlayers)
 	return;
 }
 
+void relance_server(int sig)
+{
+	printf("Relance du serveur\n");
+	disconnect_players(tabPlayers, MAX_PLAYERS);
+	//delete shared memory
+	sshmdelete(CLIENT_SERVEUR_SHM_KEY);
+	//delete semaphore
+	sem_delete(CLIENT_SERVEUR_SEM_KEY);
+	end_inscriptions = 0;
+}
+
+
 /**
  * PRE:  serverPort: a valid port number
  * POST: on success, binds a socket to 0.0.0.0:serverPort and listens to it ;
@@ -68,8 +80,8 @@ int main(int argc, char const *argv[])
 {
     int sockfd, newsockfd, i;
 	StructMessage msg;
-	
 
+	/*Setup de la memoire partagée*/
     int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
 
     int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
@@ -139,10 +151,21 @@ if(nbPLayers < MIN_PLAYERS){
 	for (i = 0; i < nbPLayers; i++)
 		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
 	disconnect_players(tabPlayers, nbPLayers);
-	exit(0);
+	
 }
 else{
 	printf("FIN DES INSCRIPTIONS\n");
+	/*int pipelChild[nbPLayers][2];
+	for (int i = 0; i < nbPLayers; i++)
+	{
+		//pipe init
+		spipe(pipelChild[i]);
+		//fork and run
+		fork_and_run1(pipelChild[i]);
+
+		sclose(pipelChild[i][1]);
+
+	}*/
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
 		for (i = 0; i < nbPLayers; i++)
