@@ -81,6 +81,11 @@ int main(int argc, char const *argv[])
     int sockfd, newsockfd, i;
 	StructMessage msg;
 
+
+	printf("LANCEMENT DU SERVEUR\n");
+	sockfd = setup_server_socket(SERVER_PORT);
+	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
+
 	/*Setup de la memoire partagée*/
     int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
 
@@ -92,9 +97,7 @@ int main(int argc, char const *argv[])
 	ssigaction(SIGINT, endServerHandler);
     ssigaction(SIGALRM, endServerHandler);
 
-    printf("LANCEMENT DU SERVEUR\n");
-	sockfd = setup_server_socket(SERVER_PORT);
-	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
+  
 
 	i = 0;
 	int nbPLayers = 0;
