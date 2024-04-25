@@ -90,10 +90,11 @@ int* createNewTilesList(int* oldList, int random_index){
 t
 }*/
 
-void serveur_fils(int sockfd){
+void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
 	//creation pipes
-	int pipefd1[2];
-	int pipefd2[2];
+	//int sockfd = (int)sockfd1
+	int* pipefd1 = (int*)pipe1;
+	int* pipefd2 = (int*)pipe2;
     spipe(pipefd1);
     spipe(pipefd2);
 
@@ -102,12 +103,15 @@ void serveur_fils(int sockfd){
 
     // recevoir num de tuile via le pipe du processus père de server
     int num_tuile;
+    printf("ICI 1: %d\n", pipefd1[0]);	
     sread(pipefd1[0], &num_tuile, sizeof(int));
-	close(pipefd1[0]);
-    // envoie de la tuile via socket au client
-    swrite(sockfd, &num_tuile, sizeof(int));
+    printf("LA BAS\n");	
+    printf("Random number sent to client: %d\n", num_tuile);	
+    // envoie de la tuile via socket au clientfpipedfds
+    //swrite(*((int *)sockfd), &num_tuile, sizeof(int));
 
-    // fermer les descripteurs de fichiers restants    
+    // fermer les descripteurs de fichiers restants  
+    close(pipefd1[0]);  
     close(pipefd2[1]);
 
 }
@@ -191,53 +195,49 @@ else{
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
 
-	//creation des pipes mais j ai cette erreur:  ISO C90 forbids variable length array ‘pipefds
+	//creation des pipes
 	int **pipefds = (int **)malloc(nbPLayers * sizeof(int *));
 	for (int i = 0; i < nbPLayers; i++) {
-		pipefds[i] = (int *)malloc(2 * sizeof(int));
-		spipe(pipefds[i]);
+	    pipefds[i] = (int *)malloc(2 * sizeof(int));
+	    spipe(&pipefds[i][0]); // Pass the address of pipefds[i][0]
+	    spipe(&pipefds[i][1]); // Pass the address of pipefds[i][1]
+	    fork_and_run3(serveur_fils, (void *)&tabPlayers[i].sockfd, (void *)&pipefds[i][0], (void *)&pipefds[i][1]);
 	}
 
-	//cree les processus fils avec fork and run1µ
+
+	int i=0;
+    while(i<NOMBRE_TOUR){
+    	int random_index = randomIntBetween(0, list_size_var-1);
+	    int randomNbr = tiles_list[random_index];
+	    printf("randomNbr %d: %d\n", i, randomNbr);
+	    createNewTilesList(tiles_list, random_index);
+    	i++;
+	    printf("\n");
+
+		for (int j = 0; j < nbPLayers; j++) {
+		    // Écrire dans l'extrémité d'écriture du tube
+		    printf("ICI: %d\n", pipefds[j][0]);	
+		    //TODO FIX LE WRITE
+		    nwrite(pipefds[j][0], &randomNbr, sizeof(int));
+		}
+
+
+	    //attendre que tous les fils aient eu une reponse
+	    for (int j = 0; j < nbPLayers; j++) {
+        	// lire dans l'extrémité d'écriture du tube
+        	sread(pipefds[j][1], &randomNbr, sizeof(int));
+    	}
+
+    }
+    
+    // Free the allocated memory for the list
+    free(tiles_list);
 	for (int i = 0; i < nbPLayers; i++) {
-		if (fork() == 0) {
-			serveur_fils(tabPlayers[i].sockfd);
-			exit(0);
-		}
+		close(pipefds[i][0]);
+		close(pipefds[i][1]);
+		free(pipefds[i]);
 	}
-
-
-
-
-		int i=0;
-	    while(i<NOMBRE_TOUR){
-	    	int random_index = randomIntBetween(0, list_size_var-1);
-		    int randomNbr = tiles_list[random_index];
-		    printf("randomNbr %d: %d\n", i, randomNbr);
-		    createNewTilesList(tiles_list, random_index);
-	    	i++;
-		    printf("\n");
-
-		 for (int j = 0; j < nbPLayers; j++) {
-    swrite(pipefds[j][1], &randomNbr, sizeof(int)); // Écrire dans l'extrémité d'écriture du tube
-}
-
-
-		    //attendre que tous les fils aient eu une reponse
-		    for (int j = 0; j < nbPLayers; j++) {
-            	sread(pipefds[j][0], &msg, sizeof(msg));
-        	}
-
-	    }
-	    
-	    // Free the allocated memory for the list
-	    free(tiles_list);
-		for (int i = 0; i < nbPLayers; i++) {
-			close(pipefds[i][0]);
-			close(pipefds[i][1]);
-			free(pipefds[i]);
-		}
-		free(pipefds);
+	free(pipefds);
 
 }
 }
