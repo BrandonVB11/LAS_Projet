@@ -17,6 +17,7 @@
 #define MIN_PLAYERS 2
 #define MAX_PLAYERS 10
 #define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
+#define NOMBRE_TOUR 20
 
 typedef struct Player
 {
@@ -171,7 +172,7 @@ else{
 			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
 
 		int i=0;
-	    while(i<20){
+	    while(i<NOMBRE_TOUR){
 	    	int random_index = randomIntBetween(0, list_size_var-1);
 		    int randomNbr = tiles_list[random_index];
 		    printf("randomNbr %d: %d\n", i, randomNbr);
