@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <time.h>
 
 #include "messages.h"
 #include "ipc_conf.h"
@@ -27,6 +28,7 @@ typedef struct Player
 
 Player tabPlayers[MAX_PLAYERS];
 volatile sig_atomic_t end_inscriptions = 0;
+volatile sig_atomic_t list_size_var = 40;
 
 void endServerHandler(int sig)
 {
@@ -39,18 +41,6 @@ void disconnect_players(Player *tabPlayers, int nbPlayers)
 		sclose(tabPlayers[i].sockfd);
 	return;
 }
-
-void relance_server(int sig)
-{
-	printf("Relance du serveur\n");
-	disconnect_players(tabPlayers, MAX_PLAYERS);
-	//delete shared memory
-	sshmdelete(CLIENT_SERVEUR_SHM_KEY);
-	//delete semaphore
-	sem_delete(CLIENT_SERVEUR_SEM_KEY);
-	end_inscriptions = 0;
-}
-
 
 /**
  * PRE:  serverPort: a valid port number
@@ -71,6 +61,49 @@ int setup_server_socket(int port){
     return sockfd;
 }
 
+//TEST
+
+int* createTilesList(){
+	int* tiles_list = (int*)malloc(list_size_var * sizeof(int));
+	for(int i=0; i<list_size_var; i++){
+		if(i<31){
+			tiles_list[i] = i+1;  //de 1-31
+		} else {
+			tiles_list[i] = i-20; // de 11-19
+		}
+	}
+
+	return tiles_list;
+}
+
+
+
+//draws the tile that got randomly picked
+/*int draw_tile(int tile){
+
+}*/
+
+//calcul du nouveau tableau
+int* createNewTilesList(int* oldList, int random_index){
+	int new_size = list_size_var-1;
+	int* newTiles = (int*)malloc(new_size* sizeof(int));
+	int j=0;
+	for (int i = 0; i<list_size_var-1; i++){
+		if(i == random_index){
+			j++;
+		}
+		newTiles[i] = oldList[j]; 
+		j++;
+	}
+	list_size_var --;
+	printf("list_size_var: %d\n", list_size_var);
+	return newTiles;
+}
+
+
+
+//TEST
+
 /*int accept_client_connection(int server_socket){
 
 }*/
@@ -80,24 +113,20 @@ int main(int argc, char const *argv[])
 {
     int sockfd, newsockfd, i;
 	StructMessage msg;
+	
 
-
-	printf("LANCEMENT DU SERVEUR\n");
-	sockfd = setup_server_socket(SERVER_PORT);
-	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
-
-	/*Setup de la memoire partagée*/
     int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
 
     int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
     char * shm = sshmat(shm_id);
     printf("MEMOIRE PARTAGE CREEE\n");
 
-    //gestion des signaux
-	ssigaction(SIGINT, endServerHandler);
+    
     ssigaction(SIGALRM, endServerHandler);
 
-  
+    printf("LANCEMENT DU SERVEUR\n");
+	sockfd = setup_server_socket(SERVER_PORT);
+	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
 
 	i = 0;
 	int nbPLayers = 0;
@@ -106,7 +135,7 @@ int main(int argc, char const *argv[])
 	alarm(TIME_INSCRIPTION);
 
 	while (!end_inscriptions)
-	{	
+	{
 		/* client trt */
 		newsockfd = accept(sockfd, NULL, NULL); 
 		if (newsockfd > 0)						
@@ -155,25 +184,36 @@ if(nbPLayers < MIN_PLAYERS){
 	for (i = 0; i < nbPLayers; i++)
 		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
 	disconnect_players(tabPlayers, nbPLayers);
-	
+	exit(0);
 }
 else{
+	//TEST
+	int* tiles_list = createTilesList();
+
+    // Display the generated tiles list
+    printf("Generated tiles list:\n");
+    for (int i = 0; i < list_size_var; i++) {
+        printf("%d ", tiles_list[i]);
+    }
+
+    printf("\n");
+
+    int i=0;
+    while(i<20){
+    	int random_index = randomIntBetween(0, list_size_var-1);
+	    int randomNbr = tiles_list[random_index];
+	    printf("randomNbr %d: %d\n", i, randomNbr);
+	    printf("\n");
+	    createNewTilesList(tiles_list, random_index);
+    	i++;
+    }
+    
+    // Free the allocated memory for the list
+    free(tiles_list);
+
+	//TEST
+
 	printf("FIN DES INSCRIPTIONS\n");
-	//mettre toutes nouvelles inscriptions en attente
-	msg.code = INSCRIPTION_EN_ATTENTE;
-	for (i = 0; i < nbPLayers; i++)
-		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
-	/*int pipelChild[nbPLayers][2];
-	for (int i = 0; i < nbPLayers; i++)
-	{
-		//pipe init
-		spipe(pipelChild[i]);
-		//fork and run
-		fork_and_run1(pipelChild[i]);
-
-		sclose(pipelChild[i][1]);
-
-	}*/
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
 		for (i = 0; i < nbPLayers; i++)
