@@ -198,6 +198,5 @@ int main(int argc, char **argv) {
         sclose(sockfd);
     }
 
-    sclose(sockfd); // Fermer le socket
     return 0;
 }
