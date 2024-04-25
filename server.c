@@ -154,7 +154,6 @@ if(nbPLayers < MIN_PLAYERS){
 	exit(0);
 }
 else{
-	//TEST
 	int* tiles_list = createTilesList();
 
     // Display the generated tiles list
@@ -165,25 +164,30 @@ else{
 
     printf("\n");
 
-    int i=0;
-    while(i<20){
-    	int random_index = randomIntBetween(0, list_size_var-1);
-	    int randomNbr = tiles_list[random_index];
-	    printf("randomNbr %d: %d\n", i, randomNbr);
-	    printf("\n");
-	    createNewTilesList(tiles_list, random_index);
-    	i++;
-    }
-    
-    // Free the allocated memory for the list
-    free(tiles_list);
-
-	//TEST
-
 	printf("FIN DES INSCRIPTIONS\n");
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
 		for (i = 0; i < nbPLayers; i++)
 			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+
+		int i=0;
+		int inutile=0;
+	    while(i<20){
+	    	int random_index = randomIntBetween(0, list_size_var-1);
+		    int randomNbr = tiles_list[random_index];
+		    printf("randomNbr %d: %d\n", i, randomNbr);
+		    createNewTilesList(tiles_list, random_index);
+	    	i++;
+		    printf("\n");
+
+		    for (int j = 0; j < nbPLayers; j++){
+	    		swrite(tabPlayers[j].sockfd, &randomNbr, sizeof(int));
+	    		sread(tabPlayers[j].sockfd, &inutile, sizeof(int));
+	    	}
+
+	    }
+	    
+	    // Free the allocated memory for the list
+	    free(tiles_list);
 }
 }
