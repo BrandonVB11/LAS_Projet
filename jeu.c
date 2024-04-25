@@ -10,3 +10,6 @@
 #include <time.h>
 
 #include "jeu.h"
+
+
+//TODO: copier les fonctions de jeu.c ici

@@ -87,8 +87,30 @@ int* createNewTilesList(int* oldList, int random_index){
 //TEST
 
 /*int accept_client_connection(int server_socket){
-
+t
 }*/
+
+void serveur_fils(int sockfd){
+	//creation pipes
+	int pipefd1[2];
+	int pipefd2[2];
+    spipe(pipefd1);
+    spipe(pipefd2);
+
+    close(pipefd1[1]); // fermer l'extrémité d'écriture du premier pipe
+    close(pipefd2[0]); // fermer l'extrémité de lecture du deuxième pipe
+
+    // recevoir num de tuile via le pipe du processus père de server
+    int num_tuile;
+    sread(pipefd1[0], &num_tuile, sizeof(int));
+	close(pipefd1[0]);
+    // envoie de la tuile via socket au client
+    swrite(sockfd, &num_tuile, sizeof(int));
+
+    // fermer les descripteurs de fichiers restants    
+    close(pipefd2[1]);
+
+}
 
 
 int main(int argc, char const *argv[])
@@ -168,8 +190,24 @@ else{
 	printf("FIN DES INSCRIPTIONS\n");
 		printf("PARTIE VA DEMARRER ... \n");
 		msg.code = START_GAME;
-		for (i = 0; i < nbPLayers; i++)
-			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+
+	//creation des pipes mais j ai cette erreur:  ISO C90 forbids variable length array ‘pipefds
+	int **pipefds = (int **)malloc(nbPLayers * sizeof(int *));
+	for (int i = 0; i < nbPLayers; i++) {
+		pipefds[i] = (int *)malloc(2 * sizeof(int));
+		spipe(pipefds[i]);
+	}
+
+	//cree les processus fils avec fork and run1µ
+	for (int i = 0; i < nbPLayers; i++) {
+		if (fork() == 0) {
+			serveur_fils(tabPlayers[i].sockfd);
+			exit(0);
+		}
+	}
+
+
+
 
 		int i=0;
 	    while(i<NOMBRE_TOUR){
@@ -180,14 +218,26 @@ else{
 	    	i++;
 		    printf("\n");
 
-		    for (int j = 0; j < nbPLayers; j++){
-	    		swrite(tabPlayers[j].sockfd, &randomNbr, sizeof(int));
-	    		sread(tabPlayers[j].sockfd, &msg, sizeof(msg));
-	    	}
+		 for (int j = 0; j < nbPLayers; j++) {
+    swrite(pipefds[j][1], &randomNbr, sizeof(int)); // Écrire dans l'extrémité d'écriture du tube
+}
+
+
+		    //attendre que tous les fils aient eu une reponse
+		    for (int j = 0; j < nbPLayers; j++) {
+            	sread(pipefds[j][0], &msg, sizeof(msg));
+        	}
 
 	    }
 	    
 	    // Free the allocated memory for the list
 	    free(tiles_list);
+		for (int i = 0; i < nbPLayers; i++) {
+			close(pipefds[i][0]);
+			close(pipefds[i][1]);
+			free(pipefds[i]);
+		}
+		free(pipefds);
+
 }
 }

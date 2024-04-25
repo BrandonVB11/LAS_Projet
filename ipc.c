@@ -24,7 +24,7 @@ StructMessage msg;
 
 void create_share_memory(){
     sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
-    sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
+    sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), IPC_CREAT | PERM);
     printf("MEMOIRE PARTAGE CREEE\n");
 
 }
@@ -32,7 +32,7 @@ void create_share_memory(){
 void register_player(char *pseudo){
     
     int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, PERM);
-    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, PERM);
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), PERM);
     char* shm = sshmat(shm_id);
     //down la memoire partagee
     sem_down(sem_id, 0);

@@ -13,6 +13,13 @@
 #define INSCRIPTION_EN_ATTENTE 15
 #define END_OF_GAME 16
 
+typedef struct
+{
+    char messageText[MAX_PSEUDO];
+    int score;
+} Message;
+
+
 
 typedef struct
 {
