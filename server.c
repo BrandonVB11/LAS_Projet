@@ -88,7 +88,8 @@ int main(int argc, char const *argv[])
     char * shm = sshmat(shm_id);
     printf("MEMOIRE PARTAGE CREEE\n");
 
-    
+    //gestion des signaux
+	ssigaction(SIGINT, endServerHandler);
     ssigaction(SIGALRM, endServerHandler);
 
     printf("LANCEMENT DU SERVEUR\n");
@@ -102,7 +103,7 @@ int main(int argc, char const *argv[])
 	alarm(TIME_INSCRIPTION);
 
 	while (!end_inscriptions)
-	{
+	{	
 		/* client trt */
 		newsockfd = accept(sockfd, NULL, NULL); 
 		if (newsockfd > 0)						
@@ -155,6 +156,10 @@ if(nbPLayers < MIN_PLAYERS){
 }
 else{
 	printf("FIN DES INSCRIPTIONS\n");
+	//mettre toutes nouvelles inscriptions en attente
+	msg.code = INSCRIPTION_EN_ATTENTE;
+	for (i = 0; i < nbPLayers; i++)
+		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
 	/*int pipelChild[nbPLayers][2];
 	for (int i = 0; i < nbPLayers; i++)
 	{
