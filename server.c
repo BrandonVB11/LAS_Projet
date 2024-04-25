@@ -10,12 +10,12 @@
 #include <time.h>
 
 #include "messages.h"
-#include "ipc_conf.h"
+#include "network.h"
+#include "ipc.h"
 #include "utils_v1.h"
 
 #define MIN_PLAYERS 2
 #define MAX_PLAYERS 10
-#define BACKLOG 5
 #define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
 
 typedef struct Player
@@ -40,25 +40,6 @@ void disconnect_players(Player *tabPlayers, int nbPlayers)
 	for (int i = 0; i < nbPlayers; i++)
 		sclose(tabPlayers[i].sockfd);
 	return;
-}
-
-/**
- * PRE:  serverPort: a valid port number
- * POST: on success, binds a socket to 0.0.0.0:serverPort and listens to it ;
- *       on failure, displays error cause and quits the program
- * RES:  return socket file descriptor
- */
-int setup_server_socket(int port){
-    int sockfd = ssocket();
-
-	int option = 1;
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int));
-
-	sbind(port, sockfd);
-
-	slisten(sockfd, BACKLOG);
-
-    return sockfd;
 }
 
 //TEST
@@ -114,14 +95,8 @@ int main(int argc, char const *argv[])
     int sockfd, newsockfd, i;
 	StructMessage msg;
 	
+    create_share_memory();
 
-    int sem_id = sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
-
-    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO, IPC_CREAT | PERM);
-    char * shm = sshmat(shm_id);
-    printf("MEMOIRE PARTAGE CREEE\n");
-
-    
     ssigaction(SIGALRM, endServerHandler);
 
     printf("LANCEMENT DU SERVEUR\n");
@@ -153,14 +128,6 @@ int main(int argc, char const *argv[])
 
 				if (nbPLayers < MIN_PLAYERS)
 				{
-                    //down la memoire partagee
-                    sem_down(sem_id, 0);
-                    //enregistre le pseudo du joueur dans la memoire partagee
-                    strcpy(shm, msg.messageText);
-                    printf("Pseudo enregistré dans la mémoire partagée : %s\n", shm);
-                    //up la memoire partagee
-                    sem_up(sem_id, 0);
-
 					msg.code = INSCRIPTION_OK;
 					nbPLayers++;
 					if (alarm(TIME_INSCRIPTION) == -1)

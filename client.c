@@ -10,6 +10,7 @@
 #include <signal.h>
 
 #include "messages.h"
+#include "network.h"
 #include "utils_v1.h"
 
 #define TILE_PLACEMENT 1
@@ -41,11 +42,7 @@ void display_board(const PlayerBoard *player) {
     printf("\n");
 }
 
-int initSocketClient(char *serverIP, int serverPort) {
-    int sockfd = ssocket();
-    sconnect(serverIP, serverPort, sockfd);
-    return sockfd;
-}
+
 
 int count_score(const PlayerBoard* player) {
     int points = 0;

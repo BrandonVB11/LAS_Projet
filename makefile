@@ -6,14 +6,20 @@ ALL= server client
 
 all: $(ALL)
 
-server : server.o utils_v1.o 
-	$(CC) $(CCFLAGS) -o server server.o utils_v1.o
+server : server.o utils_v1.o network.o ipc.o
+	$(CC) $(CCFLAGS) -o server server.o utils_v1.o network.o ipc.o
 	
-server.o: server.c messages.h ipc_conf.h
+server.o: server.c messages.h
 	$(CC) $(CCFLAGS) -c server.c
 
-client : client.o utils_v1.o
-	$(CC) $(CCFLAGS) -o client client.o utils_v1.o
+network.o: network.c network.h
+	$(CC) $(CCFLAGS) -c network.c
+
+ipc.o: ipc.c ipc.h
+	$(CC) $(CCFLAGS) -c ipc.c
+
+client : client.o utils_v1.o network.o
+	$(CC) $(CCFLAGS) -o client client.o utils_v1.o network.o
 
 client.o: client.c messages.h
 	$(CC) $(CCFLAGS) -c client.c
