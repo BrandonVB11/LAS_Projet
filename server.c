@@ -171,7 +171,6 @@ else{
 			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
 
 		int i=0;
-		int inutile=0;
 	    while(i<20){
 	    	int random_index = randomIntBetween(0, list_size_var-1);
 		    int randomNbr = tiles_list[random_index];
@@ -182,7 +181,7 @@ else{
 
 		    for (int j = 0; j < nbPLayers; j++){
 	    		swrite(tabPlayers[j].sockfd, &randomNbr, sizeof(int));
-	    		sread(tabPlayers[j].sockfd, &inutile, sizeof(int));
+	    		sread(tabPlayers[j].sockfd, &msg, sizeof(msg));
 	    	}
 
 	    }

@@ -177,7 +177,6 @@ int main(int argc, char **argv) {
 
             // Envoyer le placement au serveur
             msg.code = TILE_PLACEMENT; // Code pour placement de tuile
-            swrite(sockfd, &pos, sizeof(int)); //TODO code fin de tour
             // Safely copy into msg.messageText
             int written = snprintf(msg.messageText, MAX_MESSAGE_TEXT, 
                                    "Joueur %s a placé la tuile %d en position %d", 
@@ -187,7 +186,7 @@ int main(int argc, char **argv) {
             if (written >= MAX_MESSAGE_TEXT || written < 0) {
                 printf("Warning: Message text may be truncated or an error occurred\n");
             }
-            //swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
+            swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
         }
     }
     if (msg.code == END_OF_GAME) {
