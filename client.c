@@ -146,6 +146,8 @@ int main(int argc, char **argv) {
         while (true) {
             // Recevoir la tuile envoyée par le serveur
             ret = sread(sockfd, &tile, sizeof(int));
+            printf("Random tile: %d received from %d\n", tile, sockfd);  
+
             if (ret <= 0) {
                 printf("Erreur ou fin du jeu\n");
                 break;
@@ -178,14 +180,15 @@ int main(int argc, char **argv) {
             // Envoyer le placement au serveur
             msg.code = TILE_PLACEMENT; // Code pour placement de tuile
             // Safely copy into msg.messageText
-            int written = snprintf(msg.messageText, MAX_MESSAGE_TEXT, 
-                                   "Joueur %s a placé la tuile %d en position %d", 
-                                   player.pseudo, tile, pos);
+            //int written = snprintf(msg.messageText, MAX_MESSAGE_TEXT, 
+            //                       "Joueur %s a placé la tuile %d en position %d", 
+            //                       player.pseudo, tile, pos);
 
             // Check for truncation
-            if (written >= MAX_MESSAGE_TEXT || written < 0) {
-                printf("Warning: Message text may be truncated or an error occurred\n");
-            }
+            //if (written >= MAX_MESSAGE_TEXT || written < 0) {
+            //    printf("Warning: Message text may be truncated or an error occurred\n");
+            //}
+            printf("Tile placed on position: %d sent to %d\n", pos, sockfd);  
             swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
         }
     }
