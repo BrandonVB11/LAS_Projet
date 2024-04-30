@@ -22,6 +22,7 @@ Message msg;
 
 
 
+
 void create_share_memory(){
     sem_create(CLIENT_SERVEUR_SEM_KEY, 1, PERM, 1);
     sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), IPC_CREAT | PERM);
@@ -31,7 +32,7 @@ void create_share_memory(){
 
 void register_player_score(char *pseudo, int score){
     
-    int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, PERM);
+    int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, 1);
     int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), PERM);
     char* shm = sshmat(shm_id);
     //down la memoire partagee
@@ -45,3 +46,37 @@ void register_player_score(char *pseudo, int score){
     printf("PSEUDO ET SCORE ENREGISTRE\n");
 
 }
+
+
+Message* read_player_scores(int nbPlayers) {
+    int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, 1);
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO * sizeof(char), PERM);
+    Message* shm = (Message*)sshmat(shm_id);
+
+    sem_down(sem_id, 0); // Lock the shared memory
+
+    // Count the number of players
+    int num_players = nbPlayers;
+
+    // Sort player scores by score using bubble sort (descending order)
+    for (int i = 0; i < num_players - 1; i++) {
+        for (int j = 0; j < num_players - i - 1; j++) {
+            if (shm[j].score < shm[j + 1].score) {
+                // Swap player scores
+                Message temp = shm[j];
+                shm[j] = shm[j + 1];
+                shm[j + 1] = temp;
+            }
+        }
+    }
+
+    // Allocate memory for player scores
+    Message* player_scores = (Message*)malloc(num_players * sizeof(Message));
+    memcpy(player_scores, shm, num_players * sizeof(Message));
+
+    sem_up(sem_id, 0); // Release the lock
+    sshmdt(shm); // Detach the shared memory
+
+    return player_scores;
+}
+

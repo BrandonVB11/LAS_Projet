@@ -98,6 +98,7 @@ void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
     StructMessage msg;
     Message scoremsg;
     int num_tuile;
+    int nbPl;
     int* socketfd = sockfd;
 	int* pipeR = (int*)pipe1;
 	int* pipeW = (int*)pipe2;
@@ -125,12 +126,25 @@ void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
         swrite(pipeR[1], &msg, sizeof(StructMessage));
         i++;
     }
-    printf("NO WHILE\n"); 
-
     sread((*(int*)socketfd), &scoremsg, sizeof(scoremsg));
     printf("On a lu la reponse du client via le socket\n");
     swrite(pipeR[1], &scoremsg, sizeof(scoremsg));
     printf("On a ecrit la reponse du client sur le pipe\n");
+
+    //read pour nbr de jouers
+    int nbPlayers = sread(pipeW[0], &nbPl, sizeof(int));
+
+    //TODO print the read player scores and add the number of players in param
+    Message* player_scores = read_player_scores(nbPlayers);
+    
+    // Print the player scores
+    printf("Player Scores:\n");
+    for (int i = 0; i < nbPlayers; i++) {
+        printf("Player %d: %s - Score: %d\n", i + 1, player_scores[i].messageText, player_scores[i].score);
+    }
+
+    // Free allocated memory
+    free(player_scores);
 
     printf("Closed all pipes\n");
 }
@@ -302,10 +316,11 @@ int main(int argc, char const *argv[])
 		for (int j = 0; j < nbPLayers; j++) {                
             sread(pipeRead[j], &scoremsg, sizeof(Message));
             printf("Score read: %d\n", scoremsg.score);
+            int nbPl;
+            swrite(pipeWrite[j], &nbPl, sizeof(int));
 
             //TODO ecrire dans la mem partagee
-	register_player_score(tabPlayers[j].pseudo, scoremsg.score);
-			
+            register_player_score(tabPlayers[j].pseudo, scoremsg.score);
         }
 
         // Close pipes and free memory

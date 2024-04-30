@@ -205,6 +205,10 @@ int main(int argc, char **argv) {
         Message scoremsg;
         scoremsg.score = score;
         swrite(sockfd, &scoremsg, sizeof(Message));
+
+        
+
+
     } else {
         printf("Jeu annulé\n");
         sclose(sockfd);
