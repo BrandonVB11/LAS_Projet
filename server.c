@@ -70,17 +70,17 @@ int* createTilesList(){
 
 //calcul du nouveau tableau
 int* createNewTilesList(int* oldList, int random_index){
-	int new_size = list_size_var-1;
-	int* newTiles = (int*)malloc(new_size* sizeof(int));
+	list_size_var --;
+	int* newTiles = (int*)malloc(list_size_var* sizeof(int));
 	int j=0;
-	for (int i = 0; i<list_size_var-1; i++){
+	for (int i = 0; i<list_size_var; i++){
 		if(i == random_index){
 			j++;
 		}
 		newTiles[i] = oldList[j]; 
 		j++;
 	}
-	list_size_var --;
+	
 	printf("list_size_var: %d\n", list_size_var);
 	return newTiles;
 }
@@ -96,26 +96,41 @@ t
 void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
 	//creation pipes
     StructMessage msg;
-	int* pipefd1 = (int*)pipe1;
-	int* pipefd2 = (int*)pipe2;
-
-    printf("Pipe for : %d, %d\n", pipefd1[0], pipefd1[1]);
-
+    Message scoremsg;
     int num_tuile;
-    printf("Reading from pipefd1[0]: %d\n", pipefd1[0]);
-    sread(pipefd1[0], &num_tuile, sizeof(int));
-    printf("Random number sent to %d: %d\n", (*(int*) sockfd), num_tuile);	
-    // envoie de la tuile via socket au clientfpipedfds
-    swrite((*(int*) sockfd), &num_tuile, sizeof(int));
-    sread((*(int*) sockfd), &msg, sizeof(int));
-    printf("Code received: %d \n", msg.code);
-    // fermer les descripteurs de fichiers restants  
-    sclose(pipefd1[0]); // Close read end of the first pipe
-    sclose(pipefd1[1]); // Close write end of the first pipe
+    int* socketfd = sockfd;
+	int* pipeR = (int*)pipe1;
+	int* pipeW = (int*)pipe2;
+	sclose(pipeW[1]);
+    sclose(pipeR[0]);
 
-    sclose(pipefd2[0]); // Close read end of the second pipe
-    sclose(pipefd2[1]); // Close write end of the second pipe
 
+	printf("Pipe for : %d, %d\n", pipeR[1], pipeW[0]);    
+    
+    int i = 0;
+    while (i<20) {
+        // Read random tile from pipe1
+        sread(pipeW[0], &num_tuile, sizeof(int));
+        printf("Random number sent to %d: %d\n", (*(int*) sockfd), num_tuile);
+        
+        // Send the tile to the client
+        swrite((*(int*) socketfd), &num_tuile, sizeof(int));
+
+        // Read client response
+        printf("Setting up Answer from pipe\n");
+        sread((*(int*) socketfd), &msg, sizeof(StructMessage));
+        printf("\nCode received: %d \n\n", msg.code);
+        
+        // Write the response to pipe2
+        swrite(pipeR[1], &msg, sizeof(StructMessage));
+        i++;
+    }
+    printf("NO WHILE\n"); 
+
+    sread((*(int*)socketfd), &scoremsg, sizeof(scoremsg));
+    printf("On a lu la reponse du client via le socket\n");
+    swrite(pipeR[1], &scoremsg, sizeof(scoremsg));
+    printf("On a ecrit la reponse du client sur le pipe\n");
 
     printf("Closed all pipes\n");
 }
@@ -181,91 +196,124 @@ int main(int argc, char const *argv[])
 		}
 	}
 
-if(nbPLayers < MIN_PLAYERS){
-	printf("PAS ASSEZ DE JOUEURS ... JEU ANNULEE\n");
-	msg.code = CANCEL_GAME;
-	for (i = 0; i < nbPLayers; i++)
-		swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
-	disconnect_players(tabPlayers, nbPLayers);
-	exit(0);
-}
-else{
-	int* tiles_list = createTilesList();
+	if(nbPLayers < MIN_PLAYERS){
+		printf("PAS ASSEZ DE JOUEURS ... JEU ANNULEE\n");
+		msg.code = CANCEL_GAME;
+		for (i = 0; i < nbPLayers; i++)
+			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+		disconnect_players(tabPlayers, nbPLayers);
+		exit(0);
+	}
 
-    // Display the generated tiles list
-    printf("Generated tiles list:\n");
-    for (int i = 0; i < list_size_var; i++) {
-        printf("%d ", tiles_list[i]);
-    }
 
-    printf("\n");
+	/* -------------------------
+	  NBR PLAYERS OK WE START
+	------------------------- */
+	else{
+		int* tiles_list = createTilesList();
 
-	printf("FIN DES INSCRIPTIONS\n");
-	printf("PARTIE VA DEMARRER ... \n\n");
-	msg.code = START_GAME;
+	    // Display the generated tiles list
+	    printf("Generated tiles list:\n");
+	    for (int i = 0; i < list_size_var; i++) {
+	        printf("%d ", tiles_list[i]);
+	    }
 
-    int **pipeChild = (int **)malloc(nbPLayers * sizeof(int *));
-    char buffer[sizeof(int)];
-    struct pollfd* fds = (struct pollfd*)malloc(nbPLayers * sizeof(struct pollfd));
+	    printf("\n");
 
-    ssigaction(SIGINT, exitHandler);
-    ssigaction(SIGTERM, exitHandler);
-	//creation des pipes
-        for (int i = 0; i < nbPLayers; i++)
-    {
-        swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
-        pipeChild[i] = (int *)malloc(2 * sizeof(int));
+		printf("FIN DES INSCRIPTIONS\n");
+		printf("PARTIE VA DEMARRER ... \n\n");
+		msg.code = START_GAME;
 
-        printf("Initializing pipes for player %d\n", i);
-        spipe(pipeChild[i]);
-        printf("pipeChild[%d][0]: %d, pipeChild[%d][1]: %d\n\n", i, pipeChild[i][0], i, pipeChild[i][1]);
-        fork_and_run3(serveur_fils, (void *)&tabPlayers[i].sockfd, (void *)&pipeChild[i][0], (void *)&pipeChild[i][1]);
-        // init poll
-        fds[i].fd = pipeChild[i][0];
-        fds[i].events = POLLIN;
-    }
+		//pipe list
+	    int pipeWrite[MAX_PLAYERS];
+    	int pipeRead[MAX_PLAYERS];
+	    struct pollfd fds[MAX_PLAYERS];
 
-	int i=0;
-    while(i<NOMBRE_TOUR){
-    	int random_index = randomIntBetween(0, list_size_var-1);
-	    int random_tuile = tiles_list[random_index];
-	    printf("randomNbr %d: %d\n", i, random_tuile);
-	    createNewTilesList(tiles_list, random_index);
-    	i++;
+	    ssigaction(SIGINT, exitHandler);
+	    ssigaction(SIGTERM, exitHandler);
 
-        // Ecriture des tuiles chez les enfants
-        for (int i = 0; i < nbPLayers; i++)
-        {
-            printf("Attempting to write to pipeChild[%d][1]: %d\n", i, pipeChild[i][1]);
-            if (pipeChild[i][1] < 0) {
-                printf("Invalid file descriptor for pipeChild[%d][1]\n", i);
+		//creation des pipes
+	    for (int i = 0; i < nbPLayers; i++)
+	    {
+	        swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+	        
+	        int pipeR[2];
+	        int pipeW[2];
+	        spipe(pipeR);
+	        spipe(pipeW);
+
+	        pipeRead[i] = pipeR[0];
+	        pipeWrite[i] = pipeW[1];
+
+	        // Initialize poll structure
+	        fds[i].fd = pipeRead[i];
+	        fds[i].events = POLLIN;
+
+	        // Fork and run child process
+	        printf("fork and run: %d\n", i);
+	        fork_and_run3(serveur_fils, (void *)&tabPlayers[i].sockfd, pipeR, pipeW);
+	        
+	    }
+
+		int game_round = 0;
+        while (game_round < NOMBRE_TOUR) {
+        	printf("gameround: %d\n", game_round);
+            // Send random tile to each client
+            int random_index = randomIntBetween(0, list_size_var - 1);
+            int random_tile = tiles_list[random_index];
+            tiles_list = createNewTilesList(tiles_list, random_index);
+            for (int j = 0; j < nbPLayers; j++) {                
+                swrite(pipeWrite[j], &random_tile, sizeof(int));
             }
 
-            printf("Random tile to write: %d\n", random_tuile);
-            swrite(pipeChild[i][1], &random_tuile, sizeof(int));
-            printf("Written tile : %d\n", random_tuile);
+            // Wait for responses from all clients
+            int responses_received = 0;
+            while (responses_received < nbPLayers) {
+	            int ret = poll(fds, nbPLayers, -1); // Wait indefinitely for events
+	            if (ret > 0) {
+	                for (int j = 0; j < nbPLayers; j++) {
+	                    if (fds[j].revents & POLLIN) {
+	                        StructMessage client_response;
+	                        sread(pipeRead[j], &client_response, sizeof(StructMessage));
+	                        printf("Received response from client %d\n", j);
+	                        responses_received++;
+	                    }
+	                }
+	            } else if (ret < 0) {
+	                perror("poll");
+	                exit(EXIT_FAILURE);
+	            }
+	        }
+
+        	game_round++;
+        	responses_received = 0;
         }
-        // Polling
-        while (end == 0) {
-        spoll(fds, nbPLayers, 0); // pas de souci si le pipe est fermé côté écrivain --> pas d'événement POLLIN
-        int chosen_tile;
 
-            if (fds[i].revents & POLLIN) {
-                chosen_tile = sread(pipeChild[i][0], buffer, sizeof(int));
+        end=1;
 
-                swrite(1, &chosen_tile, sizeof(int));
-            }
+        //TODO send end of game
+        msg.code = END_OF_GAME;
+		for (i = 0; i < nbPLayers; i++)
+			swrite(tabPlayers[i].sockfd, &msg, sizeof(msg));
+
+		printf("FINI DECRIRE \n");
+
+		Message scoremsg;
+		for (int j = 0; j < nbPLayers; j++) {                
+            sread(pipeRead[j], &scoremsg, sizeof(Message));
+            printf("Score read: %d\n", scoremsg.score);
+
+            //TODO ecrire dans la mem partagee
         }
+
+        // Close pipes and free memory
+        for (int i = 0; i < nbPLayers; i++) {
+	        sclose(pipeWrite[i]);
+	        sclose(pipeRead[i]);
+	        //sclose(pipeW[0]);
+	        //sclose(pipeR[1]);
+	    }
     }
 
-    for (int i = 0; i < nbPLayers; i++) {
-        sclose(pipeChild[i][0]);
-        free(pipeChild[i]);
-    }
-
-    free(pipeChild);
-
-
-    }
-    
+    return 0;
 }
