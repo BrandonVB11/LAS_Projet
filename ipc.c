@@ -18,7 +18,7 @@
 
 #define PERM 0666
 
-StructMessage msg;
+Message msg;
 
 
 
@@ -29,17 +29,19 @@ void create_share_memory(){
 
 }
 
-void register_player(char *pseudo){
+void register_player_score(char *pseudo, int score){
     
     int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, PERM);
     int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), PERM);
     char* shm = sshmat(shm_id);
     //down la memoire partagee
     sem_down(sem_id, 0);
-    //enregistre le pseudo du joueur dans la memoire partagee
-    strcpy(shm, msg.messageText);
-    printf("Pseudo enregistré dans la mémoire partagée : %s\n", shm);
+    //enregistre le pseudo du joueur et le score dans la memoire partagee
+    strcpy(shm, pseudo);
+    shm += MAX_PSEUDO;
+    sprintf(shm, "%d", score);
     //up la memoire partagee
     sem_up(sem_id, 0);
-    printf("PSEUDO ENREGISTRE\n");
+    printf("PSEUDO ET SCORE ENREGISTRE\n");
+
 }
