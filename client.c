@@ -45,58 +45,52 @@ void display_board(const PlayerBoard *player) {
 int count_score(const PlayerBoard* player) {
     int points = 0;
     int current_sequence_length = 0;
+    int last_tile_value = -1;
 
-    // Parcours de la grille
+    // Table des scores
+    int scoring_table[21] = {0, 1, 3, 5, 7, 9, 11, 15, 20, 25, 30, 35, 40, 50, 60, 70, 85, 100, 150, 300};
+
     for (int i = 0; i < BOARD_SIZE; i++) {
-        if (player->board[i] != -1) { // Si la case n'est pas vide
-            if (current_sequence_length == 0 || (player->board[i] == player->board[i - 1] + 1)) {
-                current_sequence_length++; // Si la tuile est consécutive, on augmente la suite
+        int tile = player->board[i];
+        if (tile != -1) {
+            if (tile == 31 || (last_tile_value != -1 && (tile == last_tile_value + 1))) {
+                current_sequence_length++; // Debut d'une sequence
             } else {
-                // Fin d'une suite, calculer les points
+                // Calcule des points pour une sequence completee
                 if (current_sequence_length >= 3) {
-                    if (current_sequence_length == 3) {
-                        printf("cond2\n");
-                        points += 2; // 3 tuiles rapportent 2 points
-                    } else if (current_sequence_length == 4) {
-                        printf("cond3\n");
-                        points += 5; // 4 tuiles rapportent 5 points
-                    } else if (current_sequence_length > 4) {
-                        printf("cond4\n");
-                        points += 5 + (current_sequence_length - 3); // 5 tuiles et plus
+                    if (current_sequence_length <= 20) {
+                        points += scoring_table[current_sequence_length];
+                    } else {
+                        points += scoring_table[20];
                     }
                 }
-
-                // Réinitialiser la longueur de la suite
-                current_sequence_length = 1; // Recommencer une nouvelle suite
+                current_sequence_length = 1;
             }
         } else {
-            // Si on trouve une case vide, on calcule la suite précédente
+            // Calcul des points quand (si) il y a un trou
             if (current_sequence_length >= 3) {
-                if (current_sequence_length == 3) {
-                    points += 2; 
-                } else if (current_sequence_length == 4) {
-                    points += 5; 
-                } else if (current_sequence_length > 4) {
-                    points += 5 + (current_sequence_length - 3);
+                if (current_sequence_length <= 20) {
+                    points += scoring_table[current_sequence_length];
+                } else {
+                    points += scoring_table[20];
                 }
             }
-
-            current_sequence_length = 0; // Réinitialiser pour suite suivante
+            current_sequence_length = 0;
         }
+
+        last_tile_value = tile;
     }
 
-    // Traiter la dernière suite si nécessaire
+    // Calcule des points pour la sequence finale
     if (current_sequence_length >= 3) {
-        if (current_sequence_length == 3) {
-            points += 2;
-        } else if (current_sequence_length == 4) {
-            points += 5;
-        } else if (current_sequence_length > 4) {
-            points += 5 + (current_sequence_length - 3);
+        if (current_sequence_length <= 20) {
+            points += scoring_table[current_sequence_length];
+        } else {
+            points += scoring_table[20];
         }
     }
 
-    return points; // Retourner le score total
+    return points; // Total des points
 }
 
 int main(int argc, char **argv) {
