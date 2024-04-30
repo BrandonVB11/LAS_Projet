@@ -304,6 +304,8 @@ int main(int argc, char const *argv[])
             printf("Score read: %d\n", scoremsg.score);
 
             //TODO ecrire dans la mem partagee
+	register_player_score(tabPlayers[j].pseudo, scoremsg.score);
+			
         }
 
         // Close pipes and free memory
