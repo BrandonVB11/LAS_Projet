@@ -55,10 +55,13 @@ int count_score(const PlayerBoard* player) {
                 // Fin d'une suite, calculer les points
                 if (current_sequence_length >= 3) {
                     if (current_sequence_length == 3) {
+                        printf("cond2\n");
                         points += 2; // 3 tuiles rapportent 2 points
                     } else if (current_sequence_length == 4) {
+                        printf("cond3\n");
                         points += 5; // 4 tuiles rapportent 5 points
                     } else if (current_sequence_length > 4) {
+                        printf("cond4\n");
                         points += 5 + (current_sequence_length - 3); // 5 tuiles et plus
                     }
                 }
@@ -143,7 +146,8 @@ int main(int argc, char **argv) {
         //TEST
 
         // Boucle de jeu
-        while (true) {
+        int i=0;
+        while (i<BOARD_SIZE) {
             // Recevoir la tuile envoyée par le serveur
             ret = sread(sockfd, &tile, sizeof(int));
             printf("Random tile: %d received from %d\n", tile, sockfd);  
@@ -190,14 +194,24 @@ int main(int argc, char **argv) {
             //}
             printf("Tile placed on position: %d sent to %d\n", pos, sockfd);  
             swrite(sockfd, &msg, sizeof(msg)); // Envoyer le message au serveur
+            i++;
         }
     }
+
+    printf("DISPLAYING FINAL BOARD\n");
+    display_board(&player);
+    sread(sockfd, &msg, sizeof(msg));
+
     if (msg.code == END_OF_GAME) {
         printf("Jeu terminé\n");
         int score = count_score(&player);
-        //TODO : envoyer score au serveur
         printf("Score final du joueur %s: %d points\n", player.pseudo, score);
-        } else {
+
+        //envoie du message
+        Message scoremsg;
+        scoremsg.score = score;
+        swrite(sockfd, &scoremsg, sizeof(Message));
+    } else {
         printf("Jeu annulé\n");
         sclose(sockfd);
     }
