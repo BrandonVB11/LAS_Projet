@@ -3,4 +3,6 @@
 
 void create_share_memory();
 
+void register_player_score(char *pseudo, int score);
+
 #endif
