@@ -16,14 +16,15 @@
 #include "ipc.h"
 #include "utils_v1.h"
 
+
+#define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
+#define NOMBRE_TOUR 20
+
+
 // Groupe 24
 // Laurent Vandermeersch
 // Brandon Van Bellinghen
 // Lars Hanquet
-
-
-#define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
-#define NOMBRE_TOUR 20
 
 typedef struct Player
 {
@@ -97,32 +98,12 @@ int* createNewTilesList(int* oldList, int random_index){
 t
 }*/
 
-int read_tile_from_file(const char *filepath, int tile_index) {
-    FILE *file = fopen(filepath, "r");
-    if (file == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    int tile = -1;
-    int i = 0;
-    while (fscanf(file, "%d", &tile) != EOF) {
-        if (i == tile_index) {
-            fclose(file);
-            return tile;
-        }
-        i++;
-    }
-
-    fclose(file);
-    return -1;  // Return -1 if the index is invalid or not found
-}
-
 void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
     //creation pipes
     StructMessage msg;
     Message scoremsg;
     int num_tuile;
+    int nbPl;
     int* socketfd = sockfd;
     int* pipeR = (int*)pipe1;
     int* pipeW = (int*)pipe2;
@@ -150,8 +131,6 @@ void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
         swrite(pipeR[1], &msg, sizeof(StructMessage));
         i++;
     }
-    printf("NO WHILE\n"); 
-
     sread((*(int*)socketfd), &scoremsg, sizeof(scoremsg));
     printf("On a lu la reponse du client via le socket\n");
     swrite(pipeR[1], &scoremsg, sizeof(scoremsg));
@@ -160,14 +139,17 @@ void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
     //read pour nbr de jouers
     int nbPlayers = sread(pipeW[0], &nbPl, sizeof(int));
 
+
     //TODO print the read player scores and add the number of players in param
     Message* player_scores = read_player_scores(nbPlayers);
+
+    // Print the player scores 
     
-    // Print the player scores
     printf("Player Scores:\n");
     for (int i = 0; i < nbPlayers; i++) {
         printf("Player %d: %s - Score: %d\n", i + 1, player_scores[i].messageText, player_scores[i].score);
     }
+    
 
     // Free allocated memory
     free(player_scores);
@@ -299,17 +281,10 @@ int main(int argc, char const *argv[])
         int game_round = 0;
         while (game_round < NOMBRE_TOUR) {
             printf("gameround: %d\n", game_round);
-            int random_tile;
-            if (argc > 1) {
-                const char *filepath = argv[1];
-                random_tile = read_tile_from_file(filepath, game_round);
-
-            } else {
-                int random_index = randomIntBetween(0, list_size_var - 1);
-                random_tile = tiles_list[random_index];
-            }
-
-            tiles_list = createNewTilesList(tiles_list, random_tile + 1);
+            // Send random tile to each client
+            int random_index = randomIntBetween(0, list_size_var - 1);
+            int random_tile = tiles_list[random_index];
+            tiles_list = createNewTilesList(tiles_list, random_index);
             for (int j = 0; j < nbPLayers; j++) {                
                 swrite(pipeWrite[j], &random_tile, sizeof(int));
             }
@@ -350,21 +325,24 @@ int main(int argc, char const *argv[])
         for (int j = 0; j < nbPLayers; j++) {                
             sread(pipeRead[j], &scoremsg, sizeof(Message));
             printf("Score read: %d\n", scoremsg.score);
-            int nbPl;
+
+            //write nbr players to all sons
+            int nbPl = nbPLayers;
             swrite(pipeWrite[j], &nbPl, sizeof(int));
 
             //TODO ecrire dans la mem partagee
             register_player_score(tabPlayers[j].pseudo, scoremsg.score);
-            
         }
 
         // Close pipes and free memory
         for (int i = 0; i < nbPLayers; i++) {
-	        sclose(pipeWrite[i]);
-	        sclose(pipeRead[i]);
-	        //sclose(pipeW[0]);
-	        //sclose(pipeR[1]);
-	    }
+            sclose(pipeWrite[i]);
+            sclose(pipeRead[i]);
+            //sclose(pipeW[0]);
+            //sclose(pipeR[1]);
+        }
+
+        //delete_shared_memory();
     }
 
     return 0;
