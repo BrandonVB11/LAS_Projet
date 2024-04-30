@@ -16,6 +16,11 @@
 #include "ipc.h"
 #include "utils_v1.h"
 
+// Groupe 24
+// Laurent Vandermeersch
+// Brandon Van Bellinghen
+// Lars Hanquet
+
 #define MIN_PLAYERS 2
 #define MAX_PLAYERS 10
 #define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
