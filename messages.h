@@ -5,6 +5,9 @@
 #define SERVER_IP "127.0.0.1"
 #define MAX_PSEUDO 32
 
+#define MIN_PLAYERS 2
+#define MAX_PLAYERS 10
+
 #define INSCRIPTION_REQUEST 10
 #define INSCRIPTION_OK 11
 #define INSCRIPTION_KO 12

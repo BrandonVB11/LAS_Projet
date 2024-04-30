@@ -18,8 +18,8 @@
 
 #define PERM 0666
 
-Message msg;
 
+Message msg;
 
 
 
@@ -30,27 +30,42 @@ void create_share_memory(){
 
 }
 
+void delete_shared_memory(){
+    int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, 1);
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PLAYERS * sizeof(char), PERM);
+
+    sem_delete(sem_id);
+    sshmdelete(shm_id);
+    printf("MEMOIRE PARTAGE DETRUITE\n");
+}
+
 void register_player_score(char *pseudo, int score){
     
     int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, 1);
-    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO*sizeof(char), PERM);
-    char* shm = sshmat(shm_id);
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PLAYERS * sizeof(char), PERM);
+    Message* shm = sshmat(shm_id);
     //down la memoire partagee
     sem_down(sem_id, 0);
-    //enregistre le pseudo du joueur et le score dans la memoire partagee
-    strcpy(shm, pseudo);
-    shm += MAX_PSEUDO;
-    sprintf(shm, "%d", score);
-    //up la memoire partagee
+    
+    int i = 0;
+    while (i < MAX_PLAYERS && strlen(shm[i].messageText) != 0) {
+        i++;
+    }  
+    if (i < MAX_PLAYERS) {
+        strcpy(shm[i].messageText, pseudo);
+        shm[i].score = score;
+    }
+
     sem_up(sem_id, 0);
-    printf("PSEUDO ET SCORE ENREGISTRE\n");
+    sshmdt(shm);
+    printf("PSEUDO  ET SCORE ENREGISTRE\n");
 
 }
 
 
 Message* read_player_scores(int nbPlayers) {
     int sem_id = sem_get(CLIENT_SERVEUR_SEM_KEY, 1);
-    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PSEUDO * sizeof(char), PERM);
+    int shm_id = sshmget(CLIENT_SERVEUR_SHM_KEY, MAX_PLAYERS * sizeof(char), PERM);
     Message* shm = (Message*)sshmat(shm_id);
 
     sem_down(sem_id, 0); // Lock the shared memory

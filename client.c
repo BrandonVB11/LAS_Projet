@@ -59,7 +59,7 @@ int count_score(const PlayerBoard* player) {
             if (tile == 31 || (last_tile_value != -1 && tile == last_tile_value + 1)) {
                 current_sequence_length++; // Continue the sequence
             } else {
-                points += scoring_table[current_sequence_length];
+                        points += scoring_table[current_sequence_length];
                 current_sequence_length = 1; // Reset sequence length
             }
         } else {
@@ -111,12 +111,12 @@ int main(int argc, char **argv) {
         }
         }
     } else {
-        /* retrieve player name */
-        printf("Bienvenue dans la phase d'inscription au jeu\n");
-        printf("Pour participer, entrez votre nom :\n");
-        ret = sread(0, pseudo, MAX_PSEUDO);
-        checkNeg(ret, "Erreur de lecture du nom du joueur");
-        pseudo[ret - 1] = '\0';
+    /* retrieve player name */
+    printf("Bienvenue dans la phase d'inscription au jeu\n");
+    printf("Pour participer, entrez votre nom :\n");
+    ret = sread(0, pseudo, MAX_PSEUDO);
+    checkNeg(ret, "Erreur de lecture du nom du joueur");
+    pseudo[ret - 1] = '\0';
     }
 
     strcpy(player.pseudo, pseudo);
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
                 p_idx++; // Passer à la prochaine position
             } else {
                 // Si pas de position prédéfinie, demander au joueur
-                printf("Veuillez entrer la position (0-%d) pour placer la tuile %d :\n", BOARD_SIZE - 1, tile);
+            printf("Veuillez entrer la position (0-%d) pour placer la tuile %d :\n", BOARD_SIZE - 1, tile);
                 scanf("%d", &pos); // Lire la position entrée par le joueur
             }
             pos = pos-1;
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
         scoremsg.score = score;
         swrite(sockfd, &scoremsg, sizeof(Message));
 
-        
+
 
 
     } else {

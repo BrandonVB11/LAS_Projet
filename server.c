@@ -21,8 +21,7 @@
 // Brandon Van Bellinghen
 // Lars Hanquet
 
-#define MIN_PLAYERS 2
-#define MAX_PLAYERS 10
+
 #define TIME_INSCRIPTION 15 /*30 a metttre à la fin*/
 #define NOMBRE_TOUR 20
 
@@ -158,7 +157,22 @@ void serveur_fils(void *sockfd, void *pipe1, void *pipe2){
     swrite(pipeR[1], &scoremsg, sizeof(scoremsg));
     printf("On a ecrit la reponse du client sur le pipe\n");
 
-    printf("Closed all pipes\n");
+    //read pour nbr de jouers
+    int nbPlayers = sread(pipeW[0], &nbPl, sizeof(int));
+
+    //TODO print the read player scores and add the number of players in param
+    Message* player_scores = read_player_scores(nbPlayers);
+    
+    // Print the player scores
+    printf("Player Scores:\n");
+    for (int i = 0; i < nbPlayers; i++) {
+        printf("Player %d: %s - Score: %d\n", i + 1, player_scores[i].messageText, player_scores[i].score);
+    }
+
+    // Free allocated memory
+    free(player_scores);
+
+    printf("Closed all pipes\n\n");
 }
 
 void exitHandler(int sig)
@@ -173,6 +187,7 @@ int main(int argc, char const *argv[])
     StructMessage msg;
     
     create_share_memory();
+    //delete_shared_memory();     //ICI pour test
 
     ssigaction(SIGALRM, endServerHandler);
 
@@ -335,6 +350,8 @@ int main(int argc, char const *argv[])
         for (int j = 0; j < nbPLayers; j++) {                
             sread(pipeRead[j], &scoremsg, sizeof(Message));
             printf("Score read: %d\n", scoremsg.score);
+            int nbPl;
+            swrite(pipeWrite[j], &nbPl, sizeof(int));
 
             //TODO ecrire dans la mem partagee
             register_player_score(tabPlayers[j].pseudo, scoremsg.score);
@@ -343,11 +360,11 @@ int main(int argc, char const *argv[])
 
         // Close pipes and free memory
         for (int i = 0; i < nbPLayers; i++) {
-            sclose(pipeWrite[i]);
-            sclose(pipeRead[i]);
-            //sclose(pipeW[0]);
-            //sclose(pipeR[1]);
-        }
+	        sclose(pipeWrite[i]);
+	        sclose(pipeRead[i]);
+	        //sclose(pipeW[0]);
+	        //sclose(pipeR[1]);
+	    }
     }
 
     return 0;
